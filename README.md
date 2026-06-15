@@ -75,7 +75,8 @@
   .chip{display:inline-block;font-family:var(--mono);font-size:.78rem;background:var(--cyan-soft);color:var(--cyan);padding:2px 8px;border-radius:6px;font-weight:500}
 
   /* ---------- tabs ---------- */
-  .tabs{position:sticky;top:71px;z-index:40;display:flex;gap:8px;padding:14px 0;background:var(--paper)}
+  .tabs{position:sticky;top:71px;z-index:40;display:flex;gap:8px;padding:14px 0;background:var(--paper);transition:transform .26s ease;will-change:transform}
+  .tabs.tabs-hidden{transform:translateY(-165%);pointer-events:none}
   .tab{
     flex:1;font-family:var(--display);font-weight:700;font-size:.98rem;cursor:pointer;
     border:1px solid var(--line);background:var(--panel);color:var(--muted);
@@ -685,6 +686,7 @@ board.<span class="f">led_off</span>()
       document.getElementById('view-'+t).classList.toggle('on', which===t);
       document.getElementById('tab-'+t).classList.toggle('on', which===t);
     });
+    document.querySelector('.tabs').classList.remove('tabs-hidden');
     window.scrollTo({top: document.querySelector('.tabs').offsetTop - 80, behavior:'smooth'});
   }
 
@@ -719,6 +721,30 @@ board.<span class="f">led_off</span>()
       setTimeout(()=>btn.textContent=old, 1300);
     });
   }
+
+  // ---- auto-hide the tab bar while reading; reveal on scroll up ----
+  (function(){
+    const tabsEl = document.querySelector('.tabs');
+    const topbarH = document.querySelector('.topbar').offsetHeight;
+    function docTop(el){let y=0;while(el){y+=el.offsetTop;el=el.offsetParent;}return y;}
+    let pinAt = 0, lastY = window.scrollY;
+    function measure(){ pinAt = docTop(tabsEl) - topbarH; }
+    function onScroll(){
+      const y = window.scrollY;
+      if(y <= pinAt + 4){
+        tabsEl.classList.remove('tabs-hidden');   // above the sticky point — always show
+      } else if(y > lastY + 3){
+        tabsEl.classList.add('tabs-hidden');       // scrolling down — tuck away
+      } else if(y < lastY - 3){
+        tabsEl.classList.remove('tabs-hidden');    // scrolling up — bring it back
+      }
+      lastY = y;
+    }
+    tabsEl.addEventListener('focusin', ()=>tabsEl.classList.remove('tabs-hidden'));
+    window.addEventListener('scroll', onScroll, {passive:true});
+    window.addEventListener('resize', measure);
+    measure();
+  })();
 
   updateProgress();
 </script>
